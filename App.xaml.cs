@@ -29,6 +29,16 @@ public partial class App : Application
                 services.AddScoped<IEquipmentRepository, EquipmentRepository>();
                 services.AddScoped<IEncounterRepository, EncounterRepository>();
 
+                services.AddScoped<IClassRepository, ClassRepository>();
+                services.AddScoped<IRaceRepository, RaceRepository>();
+                services.AddScoped<IBackgroundRepository, BackgroundRepository>();
+                services.AddScoped<ISpellRepository, SpellRepository>();
+
+                services.AddTransient<CharacterClassesViewModel>();
+                services.AddTransient<RacesViewModel>();
+                services.AddTransient<BackgroundsViewModel>();
+                services.AddTransient<SpellsViewModel>();
+
                 services.AddSingleton<IRuleEngine, Dnd5eRuleEngine>();
                 services.AddSingleton<IDiceService, DiceService>();
                 services.AddSingleton<INavigationService, NavigationService>();
@@ -45,6 +55,7 @@ public partial class App : Application
                 services.AddTransient<SettingsViewModel>();
 
                 services.AddTransient<MainWindow>();
+                
             })
             .Build();
     }
