@@ -17,7 +17,6 @@ public partial class EnemyAttack : ObservableObject
     public int Reach { get; set; } = 5;
     public int RangeNormal { get; set; }
     public int RangeLong { get; set; }
-
     public int AttackBonus { get; set; }
 
     [Required, MaxLength(50)]
@@ -32,8 +31,7 @@ public partial class EnemyAttack : ObservableObject
     public bool IsOfficial { get; set; } = true;
 
     [NotMapped]
-    public string DisplayText =>
-        $"{Name}: +{AttackBonus} to hit, reach {Reach} ft., {DamageDice} {DamageType} damage";
+    public string DisplayText => $"{Name}: {AttackBonus:+#;-#;0} to hit, reach {Reach} ft., {DamageDice} {DamageType} damage";
 }
 
 public enum AttackType

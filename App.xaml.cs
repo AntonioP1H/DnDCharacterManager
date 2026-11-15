@@ -13,7 +13,6 @@ using DnDCharacterManager.Views;
 
 namespace DnDCharacterManager;
 
-/// <summary>WPF application entry point and dependency-injection composition root.</summary>
 public partial class App : Application
 {
     private readonly IHost _host;
@@ -21,10 +20,9 @@ public partial class App : Application
     public App()
     {
         _host = Host.CreateDefaultBuilder()
-            .ConfigureServices((context, services) =>
+            .ConfigureServices((_, services) =>
             {
                 services.AddDbContext<AppDbContext>();
-                services.AddSingleton<IAppDbContextFactory, AppDbContextFactory>();
 
                 services.AddScoped<ICharacterRepository, CharacterRepository>();
                 services.AddScoped<IEnemyRepository, EnemyRepository>();
@@ -34,7 +32,7 @@ public partial class App : Application
                 services.AddSingleton<IRuleEngine, Dnd5eRuleEngine>();
                 services.AddSingleton<IDiceService, DiceService>();
                 services.AddSingleton<INavigationService, NavigationService>();
-                services.AddSingleton<IRulebookImporter, RulebookImporter>();
+                services.AddScoped<IRulebookImporter, RulebookImporter>();
 
                 services.AddTransient<DashboardViewModel>();
                 services.AddTransient<CharactersViewModel>();
@@ -64,19 +62,19 @@ public partial class App : Application
                 var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                 await db.Database.EnsureCreatedAsync();
 
-                var equipmentRepository = scope.ServiceProvider.GetRequiredService<IEquipmentRepository>();
-                await equipmentRepository.SeedCoreEquipmentAsync();
+                var equipment = scope.ServiceProvider.GetRequiredService<IEquipmentRepository>();
+                await equipment.SeedCoreEquipmentAsync();
             }
 
-            var window = _host.Services.GetRequiredService<MainWindow>();
-            MainWindow = window;
-            window.Show();
+            var mainWindow = _host.Services.GetRequiredService<MainWindow>();
+            MainWindow = mainWindow;
+            mainWindow.Show();
         }
         catch (Exception ex)
         {
             MessageBox.Show(
                 $"The application could not start.\n\n{ex.Message}",
-                "Local D&D startup error",
+                "D&D Character Manager - Startup Error",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
             Shutdown(-1);
@@ -87,7 +85,8 @@ public partial class App : Application
     {
         try
         {
-            await _host.StopAsync(TimeSpan.FromSeconds(5));
+            using var shutdownTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            await _host.StopAsync(shutdownTimeout.Token);
         }
         finally
         {

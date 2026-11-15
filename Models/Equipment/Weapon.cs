@@ -1,57 +1,50 @@
 using System.ComponentModel.DataAnnotations;
-  using System.ComponentModel.DataAnnotations.Schema;
-  using CommunityToolkit.Mvvm.ComponentModel;
+using System.ComponentModel.DataAnnotations.Schema;
+using CommunityToolkit.Mvvm.ComponentModel;
 
-  namespace DnDCharacterManager.Models.Equipment;
+namespace DnDCharacterManager.Models.Equipment;
 
-  [Table("Weapons")]
-  public partial class Weapon : ObservableObject
-  {
-      public int Id { get; set; }
+[Table("Weapons")]
+public partial class Weapon : ObservableObject
+{
+    public int Id { get; set; }
 
-      [Required, MaxLength(100)]
-      public string Name { get; set; } = string.Empty;
+    [Required, MaxLength(100)]
+    public string Name { get; set; } = string.Empty;
 
-      [MaxLength(200)]
-      public string? Description { get; set; }
+    [MaxLength(200)]
+    public string? Description { get; set; }
 
-      // Damage
-      [Required, MaxLength(20)]
-      public string DamageDice { get; set; } = "1d6"; // e.g., "1d8", "2d6"
+    [Required, MaxLength(20)]
+    public string DamageDice { get; set; } = "1d6";
 
-      [Required, MaxLength(20)]
-      public string DamageType { get; set; } = "Slashing"; // Slashing, Piercing, Bludgeoning, Fire, etc.
+    [Required, MaxLength(20)]
+    public string DamageType { get; set; } = "Slashing";
 
-      // Properties
-      [MaxLength(500)]
-      public string Properties { get; set; } = string.Empty; // Comma-separated: "Versatile (1d10),Finesse,Light"
+    [MaxLength(500)]
+    public string Properties { get; set; } = string.Empty;
 
-      public bool IsMelee { get; set; } = true;
-      public bool IsRanged { get; set; } = false;
-      public int RangeNormal { get; set; } = 5; // feet
-      public int RangeLong { get; set; } = 0;   // 0 = no long range
+    public bool IsMelee { get; set; } = true;
+    public bool IsRanged { get; set; }
+    public int RangeNormal { get; set; } = 5;
+    public int RangeLong { get; set; }
+    public int MinStrength { get; set; }
 
-      // Requirements
-      public int MinStrength { get; set; } = 0; // For heavy weapons
+    [MaxLength(200)]
+    public string? SpecialEffect { get; set; }
 
-      // Special effects (homebrew/custom)
-      [MaxLength(200)]
-      public string? SpecialEffect { get; set; } // "Burning (1d4 fire, DC 15 Dex save)"
-      public bool IsOfficial { get; set; } = true; // Rulebook vs homebrew
-      public string? SourceBook { get; set; } // "PHB", "Xanathar's", "Homebrew"
-      public int? SourcePage { get; set; }
+    public bool IsOfficial { get; set; } = true;
+    public string? SourceBook { get; set; }
+    public int? SourcePage { get; set; }
+    public decimal Cost { get; set; }
+    public decimal Weight { get; set; }
 
-      // Cost & Weight
-      public decimal Cost { get; set; } = 0; // Gold pieces
-      public decimal Weight { get; set; } = 0; // Pounds
+    public virtual ICollection<WeaponProperty> WeaponProperties { get; set; } = new List<WeaponProperty>();
 
-      // Many-to-many with WeaponProperty
-      public virtual ICollection<WeaponProperty> WeaponProperties { get; set; } = new List<WeaponProperty>();
+    [NotMapped]
+    public string DisplayName => $"{Name} — {DamageDice} {DamageType} damage";
 
-      [NotMapped]
-      public string DisplayName => $"{Name} — {DamageDice} {DamageType} damage";
-
-      [NotMapped]
-      public IEnumerable<string> PropertyList => Properties.Split(',', StringSplitOptions.RemoveEmptyEntries |
-      StringSplitOptions.TrimEntries);
-  }
+    [NotMapped]
+    public IEnumerable<string> PropertyList => Properties.Split(
+        ',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+}

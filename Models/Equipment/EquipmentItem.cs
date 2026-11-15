@@ -1,31 +1,30 @@
 using System.ComponentModel.DataAnnotations;
-  using System.ComponentModel.DataAnnotations.Schema;
-  using CommunityToolkit.Mvvm.ComponentModel;
+using System.ComponentModel.DataAnnotations.Schema;
+using CommunityToolkit.Mvvm.ComponentModel;
 
-  namespace DnDCharacterManager.Models.Equipment;
+namespace DnDCharacterManager.Models.Equipment;
 
-  [Table("EquipmentItems")]
-  public partial class EquipmentItem : ObservableObject
-  {
-      public int Id { get; set; }
+[Table("EquipmentItems")]
+public partial class EquipmentItem : ObservableObject
+{
+    public int Id { get; set; }
 
-      [Required, MaxLength(100)]
-      public string Name { get; set; } = string.Empty;
+    [Required, MaxLength(100)]
+    public string Name { get; set; } = string.Empty;
 
-      [MaxLength(500)]
-      public string? Description { get; set; }
+    [MaxLength(500)]
+    public string? Description { get; set; }
 
-      [MaxLength(50)]
-      public string Category { get; set; } = "Adventuring Gear"; // Weapon, Armor, Tool, Consumable, etc.
+    [MaxLength(50)]
+    public string Category { get; set; } = "Adventuring Gear";
 
-      public decimal Cost { get; set; } = 0;
-      public decimal Weight { get; set; } = 0;
+    public decimal Cost { get; set; }
+    public decimal Weight { get; set; }
 
-      // Special properties (JSON or simple text)
-      [MaxLength(1000)]
-      public string? Properties { get; set; }
+    [MaxLength(1000)]
+    public string? Properties { get; set; }
 
-      public bool IsOfficial { get; set; } = true;
-      public string? SourceBook { get; set; }
-      public int? SourcePage { get; set; }
-  }
+    public bool IsOfficial { get; set; } = true;
+    public string? SourceBook { get; set; }
+    public int? SourcePage { get; set; }
+}

@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "DnDCharacterManager": {
+      "commandName": "Project",
+      "nativeDebugging": false
+    }
+  }
+}

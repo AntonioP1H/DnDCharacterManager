@@ -1,32 +1,109 @@
 using System.Windows;
 using System.Windows.Controls;
+using MaterialDesignThemes.Wpf;
+using DnDCharacterManager.Services.Navigation;
+using DnDCharacterManager.ViewModels.Base;
+using DnDCharacterManager.Views.Pages;
 
 namespace DnDCharacterManager.Views;
 
 public partial class MainWindow : Window
 {
-    public MainWindow()
+    private readonly INavigationService _navigationService;
+
+    private readonly (string Key, string Name, string Icon, Type PageType)[] _navItems =
+    [
+        ("Dashboard", "Dashboard", "ViewDashboard", typeof(DashboardPage)),
+        ("Characters", "Characters", "AccountGroup", typeof(CharactersPage)),
+        ("CharacterCreation", "Create Character", "AccountPlus", typeof(CharacterCreationPage)),
+        ("Enemies", "Enemies", "Skull", typeof(EnemiesPage)),
+        ("Equipment", "Equipment", "SwordCross", typeof(EquipmentPage)),
+        ("Combat", "Combat", "DiceD20", typeof(CombatPage)),
+        ("DiceRoller", "Dice Roller", "DiceMultiple", typeof(DiceRollerPage)),
+        ("Settings", "Settings", "Cog", typeof(SettingsPage))
+    ];
+
+    public MainWindow(INavigationService navigationService)
     {
         InitializeComponent();
+        _navigationService = navigationService;
+        _navigationService.SetFrame(ContentFrame);
+        _navigationService.Navigated += OnNavigated;
+
+        foreach (var item in _navItems)
+            _navigationService.RegisterPage(item.Key, item.PageType);
+
+        BuildNavigationMenu();
+        _navigationService.NavigateTo("Dashboard");
     }
 
-    private void NavigationButton_Click(object sender, RoutedEventArgs e)
+    private void BuildNavigationMenu()
     {
-        if (sender is not Button button || button.Tag is not string section)
-            return;
+        foreach (var item in _navItems)
+            NavMenuPanel.Children.Add(CreateNavButton(item.Key, item.Name, item.Icon));
+    }
 
-        PageTitle.Text = section;
-        PageDescription.Text = section switch
+    private Button CreateNavButton(string key, string name, string iconName)
+    {
+        PackIconKind iconKind = Enum.TryParse(iconName, true, out PackIconKind parsed)
+            ? parsed
+            : PackIconKind.HelpCircle;
+
+        var button = new Button
         {
-            "Dashboard" => "Campaign overview and shortcuts will appear here.",
-            "Characters" => "Create, search, edit, and manage your player characters.",
-            "Character Creation" => "Build a character using races, classes, abilities, and equipment from your imported rulebooks.",
-            "Enemies" => "Browse and manage creatures and custom enemies.",
-            "Equipment" => "Browse weapons, armor, and inventory items.",
-            "Combat" => "Build encounters, roll initiative, and track combat rounds.",
-            "Dice Roller" => "Roll dice expressions and review roll results.",
-            "Settings" => "Configure your local database, rulebooks, and application preferences.",
-            _ => "Select a section from the navigation menu."
+            Style = (Style)FindResource("FantasyButton"),
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            HorizontalContentAlignment = HorizontalAlignment.Left,
+            Padding = new Thickness(16, 12, 0, 0),
+            Margin = new Thickness(4, 2, 0, 0),
+            Tag = key,
+            Content = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                Children =
+                {
+                    new PackIcon
+                    {
+                        Kind = iconKind,
+                        Width = 22,
+                        Height = 22,
+                        VerticalAlignment = VerticalAlignment.Center,
+                        Margin = new Thickness(0, 0, 12, 0)
+                    },
+                    new TextBlock
+                    {
+                        Text = name,
+                        Style = (Style)FindResource("BodyText"),
+                        FontSize = 15,
+                        VerticalAlignment = VerticalAlignment.Center
+                    }
+                }
+            }
         };
+
+        button.Click += (_, _) => _navigationService.NavigateTo(key);
+        return button;
+    }
+
+    private void OnNavigated(Page? page)
+    {
+        PageTitleText.Text = page?.DataContext is ViewModelBase viewModel
+            ? viewModel.Title
+            : page?.Title ?? "D&D Manager";
+    }
+
+    private void SettingsButton_Click(object sender, RoutedEventArgs e)
+        => _navigationService.NavigateTo("Settings");
+
+    private void AboutButton_Click(object sender, RoutedEventArgs e)
+    {
+        MessageBox.Show(
+            "D&D Character Manager v0.1.0\n\n" +
+            "Local-first desktop application.\n" +
+            "Rules and game content are imported from your own rulebooks.\n\n" +
+            "This build provides the application foundation and dashboard.",
+            "About D&D Character Manager",
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
     }
 }

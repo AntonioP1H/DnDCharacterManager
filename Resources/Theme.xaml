@@ -7,11 +7,13 @@
     <Style TargetType="ListView" BasedOn="{StaticResource FantasyListView}" />
     <Style TargetType="ListViewItem" BasedOn="{StaticResource FantasyListViewItem}" />
     <Style TargetType="ScrollViewer" BasedOn="{StaticResource FantasyScrollViewer}" />
-    <Style x:Key="DefaultCard" TargetType="Border" BasedOn="{StaticResource FantasyCard}" />
+    <Style TargetType="Border" x:Key="DefaultCard" BasedOn="{StaticResource FantasyCard}" />
+
     <Style TargetType="Window">
         <Setter Property="Background" Value="{StaticResource SurfaceDarkBrush}" />
-        <Setter Property="FontFamily" Value="Georgia" />
+        <Setter Property="FontFamily" Value="Crimson Text, Georgia, serif" />
     </Style>
+
     <Style TargetType="Page">
         <Setter Property="Background" Value="{StaticResource SurfaceDarkBrush}" />
     </Style>

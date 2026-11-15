@@ -23,7 +23,6 @@ public interface IRuleEngine
     (string DamageExpression, string DamageType) CalculateEnemyDamage(EnemyAttack attack);
 }
 
-/// <summary>Centralized calculation service. Edition-specific behavior should be selected by ruleset.</summary>
 public sealed class Dnd5eRuleEngine : IRuleEngine
 {
     private static readonly IReadOnlyDictionary<string, AbilityType> SkillAbilityMap =
@@ -51,7 +50,7 @@ public sealed class Dnd5eRuleEngine : IRuleEngine
 
     public int CalculateProficiencyBonus(int level)
     {
-        var safeLevel = Math.Clamp(level, 1, 20);
+        int safeLevel = Math.Clamp(level, 1, 20);
         return 2 + (safeLevel - 1) / 4;
     }
 
@@ -59,103 +58,154 @@ public sealed class Dnd5eRuleEngine : IRuleEngine
 
     public int CalculateSkillModifier(Character character, string skillName)
     {
-        var skill = character.Skills.FirstOrDefault(s =>
+        ArgumentNullException.ThrowIfNull(character);
+        ArgumentException.ThrowIfNullOrWhiteSpace(skillName);
+
+        Skill? skill = character.Skills.FirstOrDefault(s =>
             s.Name.Equals(skillName, StringComparison.OrdinalIgnoreCase));
 
         if (skill is null)
-        {
-            return SkillAbilityMap.TryGetValue(skillName, out var ability)
-                ? CalculateAbilityModifier(character.GetAbilityScore(ability))
+            return SkillAbilityMap.TryGetValue(skillName, out AbilityType ability)
+                ? character.GetAbilityModifier(ability)
                 : 0;
-        }
 
-        var abilityModifier = CalculateAbilityModifier(character.GetAbilityScore(skill.Ability));
-        var proficiencyBonus = skill.IsProficient ? CalculateProficiencyBonus(character.Level) : 0;
-        var expertiseBonus = skill.HasExpertise ? CalculateProficiencyBonus(character.Level) : 0;
-        return abilityModifier + proficiencyBonus + expertiseBonus + skill.MiscModifier;
+        int proficiency = skill.HasExpertise
+            ? CalculateProficiencyBonus(character.Level) * 2
+            : skill.IsProficient ? CalculateProficiencyBonus(character.Level) : 0;
+
+        return character.GetAbilityModifier(skill.Ability) + proficiency + skill.MiscModifier;
     }
 
     public int CalculateSavingThrowModifier(Character character, AbilityType ability)
     {
-        // Saving-throw proficiency must be added from a character's selected class/ruleset data.
-        return CalculateAbilityModifier(character.GetAbilityScore(ability));
+        ArgumentNullException.ThrowIfNull(character);
+        // The current Character model does not yet persist saving-throw proficiencies.
+        return character.GetAbilityModifier(ability);
     }
 
     public int CalculateArmorClass(Character character)
     {
-        var equippedArmor = character.Armor.FirstOrDefault(a =>
-            a.IsEquipped && a.Armor is not null &&
-            !a.Armor.Category.Equals("Shield", StringComparison.OrdinalIgnoreCase));
+        ArgumentNullException.ThrowIfNull(character);
 
-        var baseAc = equippedArmor?.Armor?.BaseAC ?? 10;
-        var maxDexBonus = equippedArmor?.Armor?.MaxDexBonus ?? int.MaxValue;
-        var dexterityBonus = Math.Min(character.DexterityMod, maxDexBonus);
+        var equippedArmor = character.Armor
+            .Where(x => x.IsEquipped && x.Armor is not null)
+            .Select(x => x.Armor!)
+            .FirstOrDefault(a => !a.Category.Equals("Shield", StringComparison.OrdinalIgnoreCase));
 
-        var hasShield = character.Armor.Any(a => a.IsEquipped &&
-                             a.Armor?.Category.Equals("Shield", StringComparison.OrdinalIgnoreCase) == true)
-                        || character.Equipment.Any(e => e.IsEquipped &&
-                             e.Item?.Category.Equals("Shield", StringComparison.OrdinalIgnoreCase) == true);
+        bool hasShield = character.Armor.Any(x => x.IsEquipped &&
+            x.Armor?.Category.Equals("Shield", StringComparison.OrdinalIgnoreCase) == true);
 
-        return baseAc + dexterityBonus + (hasShield ? 2 : 0);
+        int dexterityModifier = character.DexterityMod;
+        int baseArmorClass = equippedArmor?.BaseAC ?? 10;
+        int dexterityContribution;
+
+        if (equippedArmor is null)
+        {
+            dexterityContribution = dexterityModifier;
+        }
+        else if (equippedArmor.Category.Equals("Heavy", StringComparison.OrdinalIgnoreCase))
+        {
+            dexterityContribution = 0;
+        }
+        else if (equippedArmor.MaxDexBonus.HasValue)
+        {
+            dexterityContribution = Math.Min(dexterityModifier, equippedArmor.MaxDexBonus.Value);
+        }
+        else
+        {
+            dexterityContribution = dexterityModifier;
+        }
+
+        int shieldBonus = hasShield ? 2 : 0;
+        return baseArmorClass + dexterityContribution + shieldBonus;
     }
 
-    public int CalculateInitiativeModifier(Character character) => character.DexterityMod;
+    public int CalculateInitiativeModifier(Character character)
+    {
+        ArgumentNullException.ThrowIfNull(character);
+        return character.DexterityMod;
+    }
 
     public int CalculateAttackBonus(Character character, Weapon weapon, bool isRanged)
     {
-        var finesse = weapon.Properties.Contains("Finesse", StringComparison.OrdinalIgnoreCase);
-        var abilityModifier = isRanged
-            ? character.DexterityMod
-            : finesse ? Math.Max(character.StrengthMod, character.DexterityMod) : character.StrengthMod;
+        ArgumentNullException.ThrowIfNull(character);
+        ArgumentNullException.ThrowIfNull(weapon);
 
-        var ownedWeapon = character.Weapons.FirstOrDefault(w => w.WeaponId == weapon.Id);
-        var proficiencyBonus = ownedWeapon?.IsProficient == true
-            ? CalculateProficiencyBonus(character.Level)
-            : 0;
+        bool finesse = HasProperty(weapon, "Finesse");
+        bool thrown = HasProperty(weapon, "Thrown");
+        int abilityModifier;
 
+        if (finesse)
+            abilityModifier = Math.Max(character.StrengthMod, character.DexterityMod);
+        else if (isRanged && !thrown)
+            abilityModifier = character.DexterityMod;
+        else
+            abilityModifier = character.StrengthMod;
+
+        bool proficient = character.Weapons.Any(w => w.WeaponId == weapon.Id && w.IsProficient);
+        int proficiencyBonus = proficient ? character.ProficiencyBonus : 0;
         return abilityModifier + proficiencyBonus;
     }
 
     public (string DamageExpression, string DamageType) CalculateDamage(Character character, Weapon weapon)
     {
-        var finesse = weapon.Properties.Contains("Finesse", StringComparison.OrdinalIgnoreCase);
-        var abilityModifier = finesse
+        ArgumentNullException.ThrowIfNull(character);
+        ArgumentNullException.ThrowIfNull(weapon);
+
+        bool finesse = HasProperty(weapon, "Finesse");
+        bool thrown = HasProperty(weapon, "Thrown");
+        int abilityModifier = finesse
             ? Math.Max(character.StrengthMod, character.DexterityMod)
-            : character.StrengthMod;
-        var sign = abilityModifier >= 0 ? "+" : string.Empty;
-        return ($"{weapon.DamageDice}{sign}{abilityModifier}", weapon.DamageType);
+            : weapon.IsRanged && !thrown ? character.DexterityMod : character.StrengthMod;
+
+        string expression = abilityModifier == 0
+            ? weapon.DamageDice
+            : $"{weapon.DamageDice}{(abilityModifier > 0 ? "+" : string.Empty)}{abilityModifier}";
+
+        return (expression, weapon.DamageType);
     }
+
+    private static bool HasProperty(Weapon weapon, string property)
+        => weapon.PropertyList.Any(p => p.Equals(property, StringComparison.OrdinalIgnoreCase) ||
+                                        p.StartsWith(property + " ", StringComparison.OrdinalIgnoreCase));
 
     public int CalculateMaxHitPoints(Character character, int classHitDie, int constitutionModifier)
     {
-        if (classHitDie is < 1 or > 20)
-            throw new ArgumentOutOfRangeException(nameof(classHitDie));
+        ArgumentNullException.ThrowIfNull(character);
+        if (classHitDie is not (6 or 8 or 10 or 12))
+            throw new ArgumentOutOfRangeException(nameof(classHitDie), "Class hit die must be d6, d8, d10, or d12.");
 
-        var level = Math.Clamp(character.Level, 1, 20);
-        if (level == 1)
-            return Math.Max(1, classHitDie + constitutionModifier);
-
-        var averagePerLevel = (classHitDie / 2) + 1 + constitutionModifier;
-        return Math.Max(1, classHitDie + constitutionModifier + averagePerLevel * (level - 1));
+        int level = Math.Clamp(character.Level, 1, 20);
+        int averageAfterFirst = (classHitDie / 2) + 1 + constitutionModifier;
+        return classHitDie + constitutionModifier + averageAfterFirst * (level - 1);
     }
 
-    public int CalculateEnemyProficiencyBonus(string challengeRating) => challengeRating switch
-    {
-        "0" or "1/8" or "1/4" or "1/2" or "1" or "2" or "3" or "4" => 2,
-        "5" or "6" or "7" or "8" => 3,
-        "9" or "10" or "11" or "12" => 4,
-        "13" or "14" or "15" or "16" => 5,
-        "17" or "18" or "19" or "20" => 6,
-        "21" or "22" or "23" or "24" => 7,
-        "25" or "26" or "27" or "28" => 8,
-        "29" or "30" => 9,
-        _ => 2
-    };
+    public int CalculateEnemyProficiencyBonus(string challengeRating)
+        => challengeRating?.Trim() switch
+        {
+            "0" or "1/8" or "1/4" or "1/2" or "1" or "2" or "3" or "4" => 2,
+            "5" or "6" or "7" or "8" => 3,
+            "9" or "10" or "11" or "12" => 4,
+            "13" or "14" or "15" or "16" => 5,
+            "17" or "18" or "19" or "20" => 6,
+            "21" or "22" or "23" or "24" => 7,
+            "25" or "26" or "27" or "28" => 8,
+            "29" or "30" => 9,
+            _ => 2
+        };
 
     public int CalculateEnemyAbilityModifier(int score) => Character.CalculateModifier(score);
 
-    public int CalculateEnemyAttackBonus(Enemy enemy, EnemyAttack attack) => attack.AttackBonus;
+    public int CalculateEnemyAttackBonus(Enemy enemy, EnemyAttack attack)
+    {
+        ArgumentNullException.ThrowIfNull(enemy);
+        ArgumentNullException.ThrowIfNull(attack);
+        return attack.AttackBonus;
+    }
 
     public (string DamageExpression, string DamageType) CalculateEnemyDamage(EnemyAttack attack)
-        => (attack.DamageDice, attack.DamageType);
+    {
+        ArgumentNullException.ThrowIfNull(attack);
+        return (attack.DamageDice, attack.DamageType);
+    }
 }

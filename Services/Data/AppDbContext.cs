@@ -1,12 +1,14 @@
+using System;
+using System.IO;
+using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using DnDCharacterManager.Models.Characters;
 using DnDCharacterManager.Models.Enemies;
 using DnDCharacterManager.Models.Equipment;
 using DnDCharacterManager.Models.Combat;
-using System.IO;
+
 namespace DnDCharacterManager.Services.Data;
 
-/// <summary>Entity Framework Core context backed by a local SQLite database.</summary>
 public sealed class AppDbContext : DbContext
 {
     public AppDbContext() { }
@@ -39,17 +41,12 @@ public sealed class AppDbContext : DbContext
     {
         if (!optionsBuilder.IsConfigured)
         {
-            var appFolder = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "DnDCharacterManager");
-            Directory.CreateDirectory(appFolder);
-            var databasePath = Path.Combine(appFolder, "data.db");
-            optionsBuilder.UseSqlite($"Data Source={databasePath}");
-        }
-
+            string path = GetDatabasePath();
+            optionsBuilder.UseSqlite($"Data Source={path}");
 #if DEBUG
-        optionsBuilder.EnableDetailedErrors();
+            optionsBuilder.EnableDetailedErrors();
 #endif
+        }
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -66,8 +63,18 @@ public sealed class AppDbContext : DbContext
             }
         }
 
+        ConfigureCharacters(modelBuilder);
+        ConfigureEquipment(modelBuilder);
+        ConfigureEnemies(modelBuilder);
+        ConfigureCombat(modelBuilder);
+        SeedLookupData(modelBuilder);
+    }
+
+    private static void ConfigureCharacters(ModelBuilder modelBuilder)
+    {
         modelBuilder.Entity<Character>(entity =>
         {
+            entity.ToTable("Characters");
             entity.HasKey(c => c.Id);
             entity.Property(c => c.Name).IsRequired().HasMaxLength(100);
             entity.Property(c => c.PlayerName).HasMaxLength(100);
@@ -89,31 +96,53 @@ public sealed class AppDbContext : DbContext
                 .HasForeignKey(a => a.CharacterId).OnDelete(DeleteBehavior.Cascade);
         });
 
-        modelBuilder.Entity<CharacterEquipment>()
-            .HasOne(e => e.Item).WithMany().HasForeignKey(e => e.EquipmentItemId)
-            .OnDelete(DeleteBehavior.Restrict);
-        modelBuilder.Entity<CharacterWeapon>()
-            .HasOne(w => w.Weapon).WithMany().HasForeignKey(w => w.WeaponId)
-            .OnDelete(DeleteBehavior.Restrict);
-        modelBuilder.Entity<CharacterArmor>()
-            .HasOne(a => a.Armor).WithMany().HasForeignKey(a => a.ArmorId)
-            .OnDelete(DeleteBehavior.Restrict);
-
         modelBuilder.Entity<AbilityScore>(entity =>
         {
+            entity.ToTable("AbilityScores");
             entity.HasKey(a => a.Id);
+            entity.Property(a => a.Ability).HasConversion<string>().HasMaxLength(20);
             entity.HasIndex(a => new { a.CharacterId, a.Ability }).IsUnique();
         });
 
         modelBuilder.Entity<Skill>(entity =>
         {
+            entity.ToTable("Skills");
             entity.HasKey(s => s.Id);
             entity.Property(s => s.Name).IsRequired().HasMaxLength(50);
+            entity.Property(s => s.Ability).HasConversion<string>().HasMaxLength(20);
             entity.HasIndex(s => new { s.CharacterId, s.Name }).IsUnique();
         });
 
+        modelBuilder.Entity<CharacterEquipment>(entity =>
+        {
+            entity.ToTable("CharacterEquipment");
+            entity.HasKey(e => e.Id);
+            entity.HasOne(e => e.Item).WithMany().HasForeignKey(e => e.EquipmentItemId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<CharacterWeapon>(entity =>
+        {
+            entity.ToTable("CharacterWeapons");
+            entity.HasKey(w => w.Id);
+            entity.HasOne(w => w.Weapon).WithMany().HasForeignKey(w => w.WeaponId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<CharacterArmor>(entity =>
+        {
+            entity.ToTable("CharacterArmor");
+            entity.HasKey(a => a.Id);
+            entity.HasOne(a => a.Armor).WithMany().HasForeignKey(a => a.ArmorId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+    }
+
+    private static void ConfigureEquipment(ModelBuilder modelBuilder)
+    {
         modelBuilder.Entity<Weapon>(entity =>
         {
+            entity.ToTable("Weapons");
             entity.HasKey(w => w.Id);
             entity.Property(w => w.Name).IsRequired().HasMaxLength(100);
             entity.Property(w => w.DamageDice).IsRequired().HasMaxLength(20);
@@ -124,6 +153,7 @@ public sealed class AppDbContext : DbContext
 
         modelBuilder.Entity<Armor>(entity =>
         {
+            entity.ToTable("Armors");
             entity.HasKey(a => a.Id);
             entity.Property(a => a.Name).IsRequired().HasMaxLength(100);
             entity.Property(a => a.ArmorClassFormula).IsRequired().HasMaxLength(50);
@@ -132,13 +162,39 @@ public sealed class AppDbContext : DbContext
 
         modelBuilder.Entity<EquipmentItem>(entity =>
         {
+            entity.ToTable("EquipmentItems");
             entity.HasKey(i => i.Id);
             entity.Property(i => i.Name).IsRequired().HasMaxLength(100);
             entity.Property(i => i.Category).HasMaxLength(50);
         });
 
+        modelBuilder.Entity<WeaponProperty>(entity =>
+        {
+            entity.ToTable("WeaponProperties");
+            entity.HasKey(p => p.Id);
+            entity.Property(p => p.Name).IsRequired().HasMaxLength(50);
+        });
+
+        modelBuilder.Entity<DamageType>(entity =>
+        {
+            entity.ToTable("DamageTypes");
+            entity.HasKey(d => d.Id);
+            entity.Property(d => d.Name).IsRequired().HasMaxLength(20);
+        });
+
+        modelBuilder.Entity<Condition>(entity =>
+        {
+            entity.ToTable("Conditions");
+            entity.HasKey(c => c.Id);
+            entity.Property(c => c.Name).IsRequired().HasMaxLength(30);
+        });
+    }
+
+    private static void ConfigureEnemies(ModelBuilder modelBuilder)
+    {
         modelBuilder.Entity<Enemy>(entity =>
         {
+            entity.ToTable("Enemies");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
             entity.Property(e => e.CreatureType).HasMaxLength(50);
@@ -149,50 +205,74 @@ public sealed class AppDbContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
+        modelBuilder.Entity<EnemyAttack>(entity =>
+        {
+            entity.ToTable("EnemyAttacks");
+            entity.HasKey(a => a.Id);
+            entity.Property(a => a.Name).IsRequired().HasMaxLength(100);
+            entity.Property(a => a.DamageDice).IsRequired().HasMaxLength(50);
+            entity.Property(a => a.DamageType).IsRequired().HasMaxLength(20);
+            entity.Property(a => a.Type).HasConversion<string>();
+        });
+
+        modelBuilder.Entity<EnemySpecialAbility>(entity =>
+        {
+            entity.ToTable("EnemySpecialAbilities");
+            entity.HasKey(a => a.Id);
+            entity.Property(a => a.Name).IsRequired().HasMaxLength(100);
+            entity.Property(a => a.Description).IsRequired().HasMaxLength(2000);
+            entity.Property(a => a.Type).HasConversion<string>();
+            entity.Property(a => a.Recharge).HasConversion<string>();
+        });
+    }
+
+    private static void ConfigureCombat(ModelBuilder modelBuilder)
+    {
         modelBuilder.Entity<Encounter>(entity =>
         {
+            entity.ToTable("Encounters");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
             entity.HasMany(e => e.Participants).WithOne().HasForeignKey(p => p.EncounterId)
                 .OnDelete(DeleteBehavior.Cascade);
-            entity.HasMany(e => e.CombatLog).WithOne().HasForeignKey(log => log.EncounterId)
+            entity.HasMany(e => e.CombatLog).WithOne().HasForeignKey(l => l.EncounterId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<CombatParticipant>(entity =>
         {
+            entity.ToTable("CombatParticipants");
             entity.HasKey(p => p.Id);
             entity.Property(p => p.Name).IsRequired().HasMaxLength(100);
             entity.Property(p => p.Type).HasConversion<string>();
             entity.HasIndex(p => new { p.EncounterId, p.Initiative });
         });
 
-        SeedLookupData(modelBuilder);
+        modelBuilder.Entity<CombatLogEntry>(entity =>
+        {
+            entity.ToTable("CombatLog");
+            entity.HasKey(l => l.Id);
+            entity.Property(l => l.ActorName).IsRequired().HasMaxLength(100);
+            entity.Property(l => l.ActionType).IsRequired().HasMaxLength(50);
+            entity.Property(l => l.Description).HasMaxLength(1000);
+        });
     }
 
     private static void SeedLookupData(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<DamageType>().HasData(
-            Enum.GetValues<DamageTypeEnum>()
-                .Select(value => new DamageType { Id = (int)value, Name = value.ToString() }));
-
+            Enum.GetValues<DamageTypeEnum>().Select(v => new DamageType { Id = (int)v, Name = v.ToString() }));
         modelBuilder.Entity<Condition>().HasData(
-            Enum.GetValues<ConditionEnum>()
-                .Select(value => new Condition { Id = (int)value, Name = value.ToString() }));
-
+            Enum.GetValues<ConditionEnum>().Select(v => new Condition { Id = (int)v, Name = v.ToString() }));
         modelBuilder.Entity<WeaponProperty>().HasData(
-            Enum.GetValues<WeaponPropertyEnum>()
-                .Select(value => new WeaponProperty { Id = (int)value, Name = value.ToString() }));
+            Enum.GetValues<WeaponPropertyEnum>().Select(v => new WeaponProperty { Id = (int)v, Name = v.ToString() }));
     }
-}
 
-/// <summary>Small app-specific factory, separate from EF Core's generic IDbContextFactory.</summary>
-public interface IAppDbContextFactory
-{
-    AppDbContext CreateDbContext();
-}
-
-public sealed class AppDbContextFactory : IAppDbContextFactory
-{
-    public AppDbContext CreateDbContext() => new();
+    private static string GetDatabasePath()
+    {
+        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        string directory = Path.Combine(appData, "DnDCharacterManager");
+        Directory.CreateDirectory(directory);
+        return Path.Combine(directory, "data.db");
+    }
 }

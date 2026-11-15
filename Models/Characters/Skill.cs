@@ -17,14 +17,13 @@ public partial class Skill : ObservableObject
     public AbilityType Ability { get; set; }
 
     public bool IsProficient { get; set; }
-    public bool HasExpertise { get; set; } // Double proficiency (Rogue, Bard, etc.)
+    public bool HasExpertise { get; set; }
 
     [Range(-10, 10)]
-    public int MiscModifier { get; set; } = 0; // Magic items, feats, etc.
+    public int MiscModifier { get; set; }
 
-    // Source tracking
-    public string? Source { get; set; } // "Class", "Background", "Race", "Feat", "Item"
-    public string? SourceDetail { get; set; } // Specific feature name
+    public string? Source { get; set; }
+    public string? SourceDetail { get; set; }
 
     [NotMapped]
     public string DisplayName => $"{Name} ({Ability})";

@@ -4,11 +4,11 @@ using DnDCharacterManager.Models.Characters;
 
 namespace DnDCharacterManager.Models.Equipment;
 
-/// <summary>An inventory row linking a character to a catalogue equipment item.</summary>
 [Table("CharacterEquipment")]
 public class CharacterEquipment
 {
-    [Key] public int Id { get; set; }
+    [Key]
+    public int Id { get; set; }
     public int CharacterId { get; set; }
     public virtual Character Character { get; set; } = null!;
     public int? EquipmentItemId { get; set; }
@@ -18,11 +18,11 @@ public class CharacterEquipment
     public bool IsAttuned { get; set; }
 }
 
-/// <summary>A weapon instance owned by a character.</summary>
 [Table("CharacterWeapons")]
 public class CharacterWeapon
 {
-    [Key] public int Id { get; set; }
+    [Key]
+    public int Id { get; set; }
     public int CharacterId { get; set; }
     public virtual Character Character { get; set; } = null!;
     public int? WeaponId { get; set; }
@@ -32,11 +32,11 @@ public class CharacterWeapon
     public bool IsProficient { get; set; }
 }
 
-/// <summary>An armor instance owned by a character.</summary>
 [Table("CharacterArmor")]
 public class CharacterArmor
 {
-    [Key] public int Id { get; set; }
+    [Key]
+    public int Id { get; set; }
     public int CharacterId { get; set; }
     public virtual Character Character { get; set; } = null!;
     public int? ArmorId { get; set; }
