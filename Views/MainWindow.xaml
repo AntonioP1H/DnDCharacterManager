@@ -1,0 +1,49 @@
+<Window x:Class="DnDCharacterManager.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Local D&amp;D Character Manager"
+        Width="1200" Height="800" MinWidth="900" MinHeight="600"
+        WindowStartupLocation="CenterScreen">
+    <Grid Background="{StaticResource SurfaceDarkBrush}">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="230" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <Border Grid.Column="0" Background="{StaticResource PrimaryDarkBrush}" Padding="18">
+            <DockPanel LastChildFill="True">
+                <StackPanel DockPanel.Dock="Top" Margin="0,0,0,24">
+                    <TextBlock Text="LOCAL D&amp;D" FontSize="25" FontWeight="Bold"
+                               Foreground="{StaticResource AccentGoldBrush}" />
+                    <TextBlock Text="CHARACTER MANAGER" FontSize="11"
+                               Foreground="{StaticResource TextSecondaryBrush}" />
+                </StackPanel>
+                <StackPanel>
+                    <Button Content="Dashboard" Tag="Dashboard" Click="NavigationButton_Click" Margin="0,3" />
+                    <Button Content="Characters" Tag="Characters" Click="NavigationButton_Click" Margin="0,3" />
+                    <Button Content="Create Character" Tag="Character Creation" Click="NavigationButton_Click" Margin="0,3" />
+                    <Button Content="Enemies" Tag="Enemies" Click="NavigationButton_Click" Margin="0,3" />
+                    <Button Content="Equipment" Tag="Equipment" Click="NavigationButton_Click" Margin="0,3" />
+                    <Button Content="Combat" Tag="Combat" Click="NavigationButton_Click" Margin="0,3" />
+                    <Button Content="Dice Roller" Tag="Dice Roller" Click="NavigationButton_Click" Margin="0,3" />
+                    <Button Content="Settings" Tag="Settings" Click="NavigationButton_Click" Margin="0,3" />
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <Grid Grid.Column="1" Margin="36">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="650">
+                <TextBlock x:Name="PageTitle" Text="Welcome, Adventurer!"
+                           FontSize="34" FontWeight="Bold" Foreground="{StaticResource AccentGoldBrush}"
+                           HorizontalAlignment="Center" TextAlignment="Center" />
+                <TextBlock x:Name="PageDescription"
+                           Text="Your local D&amp;D workspace is ready. Choose a section from the menu to get started."
+                           Margin="0,18,0,0" FontSize="16" Foreground="{StaticResource TextPrimaryBrush}"
+                           TextAlignment="Center" TextWrapping="Wrap" />
+                <TextBlock Text="Foundation screen — character, rulebook, and combat features are added in subsequent steps."
+                           Margin="0,14,0,0" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}"
+                           TextAlignment="Center" TextWrapping="Wrap" />
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>
