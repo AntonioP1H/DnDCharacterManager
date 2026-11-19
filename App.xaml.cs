@@ -9,7 +9,7 @@ using DnDCharacterManager.Services.Navigation;
 using DnDCharacterManager.Services.Rules;
 using DnDCharacterManager.Services.Rules.Dice;
 using DnDCharacterManager.ViewModels.Pages;
-using DnDCharacterManager.Views;
+using ShellMainWindow = DnDCharacterManager.Views.MainWindow;
 
 namespace DnDCharacterManager;
 
@@ -54,7 +54,7 @@ public partial class App : Application
                 services.AddTransient<DiceRollerViewModel>();
                 services.AddTransient<SettingsViewModel>();
 
-                services.AddTransient<MainWindow>();
+                services.AddTransient<ShellMainWindow>();
                 
             })
             .Build();
@@ -72,13 +72,14 @@ public partial class App : Application
             {
                 var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                 await db.Database.EnsureCreatedAsync();
+                await Phase2SchemaInitializer.EnsurePhase2SchemaAsync(db);
 
                 var equipment = scope.ServiceProvider.GetRequiredService<IEquipmentRepository>();
                 await equipment.SeedCoreEquipmentAsync();
             }
 
-            var mainWindow = _host.Services.GetRequiredService<MainWindow>();
-            MainWindow = mainWindow;
+            var mainWindow = _host.Services.GetRequiredService<ShellMainWindow>();
+            this.MainWindow = mainWindow;
             mainWindow.Show();
         }
         catch (Exception ex)

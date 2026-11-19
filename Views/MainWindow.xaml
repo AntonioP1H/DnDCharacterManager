@@ -42,7 +42,7 @@
                         BorderThickness="0,0,0,2"
                         Padding="16,20">
                     <StackPanel Orientation="Horizontal">
-                        <materialDesign:PackIcon Kind="Dragon"
+                        <materialDesign:PackIcon Kind="DiceD20"
                                                   Width="28" Height="28"
                                                   Foreground="{StaticResource AccentGoldBrush}"
                                                   VerticalAlignment="Center" />

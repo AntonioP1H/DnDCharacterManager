@@ -16,6 +16,10 @@ public sealed class AppDbContext : DbContext
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
     public DbSet<Character> Characters => Set<Character>();
+    public DbSet<CharacterClass> CharacterClasses => Set<CharacterClass>();
+    public DbSet<Race> Races => Set<Race>();
+    public DbSet<Background> Backgrounds => Set<Background>();
+    public DbSet<CharacterSpell> CharacterSpells => Set<CharacterSpell>();
     public DbSet<AbilityScore> AbilityScores => Set<AbilityScore>();
     public DbSet<Skill> Skills => Set<Skill>();
     public DbSet<CharacterEquipment> CharacterEquipment => Set<CharacterEquipment>();
@@ -26,6 +30,7 @@ public sealed class AppDbContext : DbContext
     public DbSet<EnemyAttack> EnemyAttacks => Set<EnemyAttack>();
     public DbSet<EnemySpecialAbility> EnemySpecialAbilities => Set<EnemySpecialAbility>();
 
+    public DbSet<Spell> Spells => Set<Spell>();
     public DbSet<Weapon> Weapons => Set<Weapon>();
     public DbSet<Armor> Armors => Set<Armor>();
     public DbSet<EquipmentItem> EquipmentItems => Set<EquipmentItem>();
@@ -67,6 +72,7 @@ public sealed class AppDbContext : DbContext
         ConfigureEquipment(modelBuilder);
         ConfigureEnemies(modelBuilder);
         ConfigureCombat(modelBuilder);
+        modelBuilder.ConfigurePhase2();
         SeedLookupData(modelBuilder);
     }
 

@@ -27,19 +27,29 @@
                                    Margin="0,8,0,0" />
                         <TextBlock Text="{Binding StatusMessage}"
                                    Foreground="{StaticResource TextSecondaryBrush}"
+                                   TextWrapping="Wrap"
                                    Margin="0,8,0,0" />
                     </StackPanel>
-                    <Button Grid.Column="1"
-                            Style="{StaticResource GoldButton}"
-                            Command="{Binding NewCharacterCommand}"
-                            Padding="24,12"
-                            VerticalAlignment="Center">
-                        <StackPanel Orientation="Horizontal">
-                            <materialDesign:PackIcon Kind="AccountPlus" Width="20" Height="20"
-                                                     VerticalAlignment="Center" Margin="0,0,8,0" />
-                            <TextBlock Text="New Character" VerticalAlignment="Center" />
-                        </StackPanel>
-                    </Button>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Style="{StaticResource FantasyButton}"
+                                Command="{Binding ImportRulebooksCommand}"
+                                Padding="18,12" Margin="0,0,10,0">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="FilePdfBox" Width="20" Height="20"
+                                                         VerticalAlignment="Center" Margin="0,0,8,0" />
+                                <TextBlock Text="Import Rulebooks" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource GoldButton}"
+                                Command="{Binding NewCharacterCommand}"
+                                Padding="24,12">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="AccountPlus" Width="20" Height="20"
+                                                         VerticalAlignment="Center" Margin="0,0,8,0" />
+                                <TextBlock Text="New Character" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
                 </Grid>
             </Border>
 
@@ -165,7 +175,7 @@
                     Margin="0,24,0,0"
                     Visibility="{Binding RecentCharacter, Converter={StaticResource InverseNullToVisibilityConverter}}">
                 <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                    <materialDesign:PackIcon Kind="Dragon" Width="64" Height="64"
+                    <materialDesign:PackIcon Kind="SkullCrossbones" Width="64" Height="64"
                                              Foreground="{StaticResource TextDisabledBrush}"
                                              HorizontalAlignment="Center" />
                     <TextBlock Text="No characters yet" Style="{StaticResource HeadingText}"

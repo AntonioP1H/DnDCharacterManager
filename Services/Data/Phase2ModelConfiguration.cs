@@ -16,6 +16,7 @@ public static class Phase2ModelConfiguration
 
         modelBuilder.Entity<CharacterClass>(entity =>
         {
+            entity.ToTable("CharacterClasses");
             entity.HasKey(x => x.Id);
             entity.Property(x => x.Name).IsRequired().HasMaxLength(50);
             entity.HasIndex(x => x.Name).IsUnique();
@@ -23,6 +24,7 @@ public static class Phase2ModelConfiguration
 
         modelBuilder.Entity<Race>(entity =>
         {
+            entity.ToTable("Races");
             entity.HasKey(x => x.Id);
             entity.Property(x => x.Name).IsRequired().HasMaxLength(50);
             entity.HasIndex(x => x.Name).IsUnique();
@@ -30,6 +32,7 @@ public static class Phase2ModelConfiguration
 
         modelBuilder.Entity<Background>(entity =>
         {
+            entity.ToTable("Backgrounds");
             entity.HasKey(x => x.Id);
             entity.Property(x => x.Name).IsRequired().HasMaxLength(50);
             entity.HasIndex(x => x.Name).IsUnique();
@@ -37,6 +40,7 @@ public static class Phase2ModelConfiguration
 
         modelBuilder.Entity<Spell>(entity =>
         {
+            entity.ToTable("Spells");
             entity.HasKey(x => x.Id);
             entity.Property(x => x.Name).IsRequired().HasMaxLength(100);
             entity.HasIndex(x => new { x.Name, x.Level }).IsUnique();
@@ -44,6 +48,7 @@ public static class Phase2ModelConfiguration
 
         modelBuilder.Entity<CharacterSpell>(entity =>
         {
+            entity.ToTable("CharacterSpells");
             entity.HasKey(x => x.Id);
             entity.HasIndex(x => new { x.CharacterId, x.SpellId }).IsUnique();
             entity.HasOne<Character>()
